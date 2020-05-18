@@ -23,14 +23,14 @@ function gchc_stats_activation() {
     check_stats_for_updates();
 }
 
-// Upon plugin deactivation delete wp_options table for the location
+// Upon plugin deactivation delete wp_options table for each location
 register_deactivation_hook( __FILE__, 'gchc_stats_deactivation' );
 function gchc_stats_deactivation() {
     delete_option('covid_stats_HTML');
     delete_option('gchc_stats_location_id');
 }
 
-// Shortcode [show_stats] pulls the HTML from the options table for the location specified in the plugin options
+// Shortcode [show_stats id=LOCATION_ID] pulls the HTML from the options table for the location specified in the id
 function stats_api_func( $atts ) {
     $response = get_option('covid_stats_HTML');
     return $response;
@@ -62,7 +62,7 @@ function check_stats_for_updates() {
 add_filter( 'cron_schedules', 'add_thirty_minute_cron_interval' );
 function add_thirty_minute_cron_interval( $schedules ) { 
     $schedules['thirty_minutes'] = array(
-        'interval' => 5,
+        'interval' => 1800,
         'display'  => esc_html__( 'Every Thirty minutes' ), );
     return $schedules;
 }
@@ -72,19 +72,16 @@ if ( ! wp_next_scheduled( 'gchc_check_stats' ) ) {
     wp_schedule_event( time(), 'thirty_minutes', 'gchc_check_stats' );
 }
 
-// Register the location ID setting for the plugin
 function gchc_stats_register_settings() {
     register_setting( 'gchc_stats_options_group', 'gchc_stats_location_id' );
-}
-add_action( 'admin_init', 'gchc_stats_register_settings' );
+ }
+ add_action( 'admin_init', 'gchc_stats_register_settings' );
 
- // Register the options page for the location ID
  function gchc_stats_register_options_page() {
     add_options_page('GCHC Stats Options', 'GCHC Stats', 'manage_options', 'gchc_stats', 'gchc_stats_options_page');
-}
-add_action('admin_menu', 'gchc_stats_register_options_page');
+  }
+  add_action('admin_menu', 'gchc_stats_register_options_page');
 
-// Render the options page for the plugin
 function gchc_stats_options_page() {
 ?>
     <div>
@@ -104,3 +101,6 @@ function gchc_stats_options_page() {
     </div>
     <?php
 }
+
+// When the location ID is updated run check_stats_for_updates
+add_action('update_option_gchc_stats_location_id', 'check_stats_for_updates');
